@@ -72,7 +72,7 @@ const Whiteboard = () => {
   const handleSave = async () => {
     const canvas = canvasRef.current;
     const dataUrl = canvas.toDataURL('image/png');
-    const response = await fetch('/api/save', {
+    const response = await fetch('/api/drawings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

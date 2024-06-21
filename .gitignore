@@ -34,3 +34,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+# Prisma
+prisma/dev.db
+prisma/migrations
+
+# If you want to ignore the entire prisma directory except the schema:
+prisma/*
+!prisma/schema.prisma
