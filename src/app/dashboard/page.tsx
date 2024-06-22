@@ -1,8 +1,8 @@
 "use client";
-
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";  // Correct hook for App Router
+import { useRouter } from "next/navigation";
+import Image from 'next/image';
 
 const Dashboard = () => {
   const { data: session, status } = useSession();
@@ -11,14 +11,23 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (session) {
-      // Fetch drawings for the authenticated user
-      // This is a placeholder; replace with your actual fetch logic
-      setDrawings([
-        { id: 1, drawing: "/path/to/drawing1.png" },
-        { id: 2, drawing: "/path/to/drawing2.png" },
-      ]);
+      fetchDrawings();
     }
   }, [session]);
+
+  const fetchDrawings = async () => {
+    try {
+      const response = await fetch('/api/drawings');
+      if (response.ok) {
+        const data = await response.json();
+        setDrawings(data);
+      } else {
+        console.error('Failed to fetch drawings');
+      }
+    } catch (error) {
+      console.error('Error fetching drawings:', error);
+    }
+  };
 
   if (status === "loading") {
     return <div>Loading...</div>;
@@ -32,12 +41,19 @@ const Dashboard = () => {
     router.push("/whiteboard");
   };
 
+  const handleSelectDrawing = (drawingId) => {
+    router.push(`/whiteboard?id=${drawingId}`);
+  };
+
   return (
     <div>
       <h1>Your Drawings</h1>
-      <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
         {drawings.map((drawing) => (
-          <img key={drawing.id} src={drawing.drawing} alt="User drawing" />
+          <div key={drawing.id} onClick={() => handleSelectDrawing(drawing.id)} style={{ cursor: 'pointer' }}>
+            <Image src={drawing.data} alt="User drawing" width={200} height={200} />
+            <p>Created: {new Date(drawing.createdAt).toLocaleDateString()}</p>
+          </div>
         ))}
       </div>
       <button onClick={handleNewDrawing}>Add New Drawing</button>

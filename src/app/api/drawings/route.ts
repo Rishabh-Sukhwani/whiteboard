@@ -9,25 +9,44 @@ export async function POST(request: NextRequest) {
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     const { data } = await request.json();
     if (!data) {
       return NextResponse.json({ error: 'No data provided' }, { status: 400 });
     }
-
     // Make sure session.user.id exists
     if (!session.user.id) {
       return NextResponse.json({ error: 'User ID not found in session' }, { status: 400 });
     }
-
     const drawing = await prisma.drawing.create({
       data: {
         data,
         userId: session.user.id,
       },
     });
-
     return NextResponse.json(drawing, { status: 201 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const drawings = await prisma.drawing.findMany({
+      where: {
+        userId: session.user.id
+      },
+      select: {
+        id: true,
+        data: true,
+        createdAt: true
+      }
+    });
+    return NextResponse.json(drawings);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

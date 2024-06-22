@@ -1,6 +1,6 @@
 "use client";
-
 import React, { useRef, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Tray from './tray';
 
 const Whiteboard = () => {
@@ -11,17 +11,60 @@ const Whiteboard = () => {
   const [strokeSize, setStrokeSize] = useState(5);
   const [strokeColor, setStrokeColor] = useState('#df4b26');
   const [tool, setTool] = useState('draw');
+  const [loadedData, setLoadedData] = useState(null);
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const drawingId = searchParams.get('id');
+
+  useEffect(() => {
+    if (drawingId) {
+      fetchDrawing(drawingId);
+    }
+  }, [drawingId]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
+    if (canvas) {
+      const context = canvas.getContext('2d');
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      
+      // Clear the canvas with a white background
+      context.fillStyle = 'white';
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Clear the canvas with a white background
-    context.fillStyle = 'white';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-  }, []);
+      if (loadedData) {
+        loadDrawingToCanvas(loadedData);
+      }
+    }
+  }, [loadedData]);
+
+  const fetchDrawing = async (id) => {
+    try {
+      const response = await fetch(`/api/drawings/${id}`);
+      if (response.ok) {
+        const drawingData = await response.json();
+        console.log("Fetched drawing data:", drawingData);
+        setLoadedData(drawingData.data);
+      } else {
+        console.error('Failed to fetch drawing');
+      }
+    } catch (error) {
+      console.error('Error fetching drawing:', error);
+    }
+  };
+
+  const loadDrawingToCanvas = (dataUrl) => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      context.drawImage(img, 0, 0);
+      console.log("Drawing loaded to canvas");
+    };
+    img.src = dataUrl;
+  };
 
   const startDrawing = ({ nativeEvent }) => {
     const { offsetX, offsetY } = nativeEvent;
@@ -72,15 +115,27 @@ const Whiteboard = () => {
   const handleSave = async () => {
     const canvas = canvasRef.current;
     const dataUrl = canvas.toDataURL('image/png');
-    const response = await fetch('/api/drawings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ data: dataUrl }),
-    });
-    const data = await response.json();
-    console.log(data);
+    const method = drawingId ? 'PUT' : 'POST';
+    const url = drawingId ? `/api/drawings/${drawingId}` : '/api/drawings';
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ data: dataUrl }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Drawing saved:', data);
+        router.push('/dashboard');
+      } else {
+        console.error('Failed to save drawing');
+      }
+    } catch (error) {
+      console.error('Error saving drawing:', error);
+    }
   };
 
   const applyChaikinAlgorithm = (points) => {
@@ -111,15 +166,17 @@ const Whiteboard = () => {
       />
       <canvas
         ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={800}  // Set a fixed width
+        height={600} // Set a fixed height
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={endDrawing}
         onMouseLeave={endDrawing}
         style={{ border: '1px solid black', backgroundColor: 'white' }}
       />
-      <button onClick={handleSave}>Save</button>
+      <button onClick={handleSave}>{drawingId ? 'Update' : 'Save'}</button>
+      {drawingId && <p>Editing drawing: {drawingId}</p>}
+      {loadedData && <p>Drawing data loaded</p>}
     </div>
   );
 };
