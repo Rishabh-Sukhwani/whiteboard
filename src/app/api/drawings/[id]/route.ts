@@ -21,6 +21,7 @@ export async function GET(
       select: {
         id: true,
         data: true,
+        strokes: true,
         createdAt: true
       }
     });
@@ -29,7 +30,13 @@ export async function GET(
       return NextResponse.json({ error: 'Drawing not found' }, { status: 404 });
     }
 
-    return NextResponse.json(drawing);
+    // Parse strokes JSON
+    const parsedDrawing = {
+      ...drawing,
+      strokes: drawing.strokes ? JSON.parse(drawing.strokes) : []
+    };
+
+    return NextResponse.json(parsedDrawing);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -46,7 +53,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data } = await request.json();
+    const { data, strokes } = await request.json();
     if (!data) {
       return NextResponse.json({ error: 'No data provided' }, { status: 400 });
     }
@@ -58,10 +65,17 @@ export async function PUT(
       },
       data: {
         data,
+        strokes: JSON.stringify(strokes), // Store strokes as a JSON string
       },
     });
 
-    return NextResponse.json(updatedDrawing);
+    // Parse strokes JSON before sending response
+    const parsedDrawing = {
+      ...updatedDrawing,
+      strokes: updatedDrawing.strokes ? JSON.parse(updatedDrawing.strokes) : []
+    };
+
+    return NextResponse.json(parsedDrawing);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

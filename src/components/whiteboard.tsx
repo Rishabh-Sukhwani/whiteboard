@@ -12,7 +12,7 @@ const Whiteboard = () => {
   const [strokeColor, setStrokeColor] = useState('#df4b26');
   const [tool, setTool] = useState('draw');
   const [loadedData, setLoadedData] = useState(null);
-  
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const drawingId = searchParams.get('id');
@@ -29,13 +29,21 @@ const Whiteboard = () => {
       const context = canvas.getContext('2d');
       context.lineCap = 'round';
       context.lineJoin = 'round';
-      
-      // Clear the canvas with a white background
-      context.fillStyle = 'white';
-      context.fillRect(0, 0, canvas.width, canvas.height);
 
       if (loadedData) {
-        loadDrawingToCanvas(loadedData);
+        const img = new Image();
+        img.onload = () => {
+          context.drawImage(img, 0, 0);
+          if (loadedData.strokes) {
+            setStrokes(loadedData.strokes);
+            loadedData.strokes.forEach(drawStroke);
+          }
+        };
+        img.src = loadedData.data;
+      } else {
+        // Clear the canvas and set white background
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvas.width, canvas.height);
       }
     }
   }, [loadedData]);
@@ -46,24 +54,14 @@ const Whiteboard = () => {
       if (response.ok) {
         const drawingData = await response.json();
         console.log("Fetched drawing data:", drawingData);
-        setLoadedData(drawingData.data);
+        setLoadedData(drawingData);
+        setStrokes(drawingData.strokes || []);
       } else {
         console.error('Failed to fetch drawing');
       }
     } catch (error) {
       console.error('Error fetching drawing:', error);
     }
-  };
-
-  const loadDrawingToCanvas = (dataUrl) => {
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    const img = new Image();
-    img.onload = () => {
-      context.drawImage(img, 0, 0);
-      console.log("Drawing loaded to canvas");
-    };
-    img.src = dataUrl;
   };
 
   const startDrawing = ({ nativeEvent }) => {
@@ -76,40 +74,62 @@ const Whiteboard = () => {
     if (!isDrawing) return;
     const { offsetX, offsetY } = nativeEvent;
     const newPoint = { x: offsetX, y: offsetY };
-    setCurrentStroke((prevStroke) => ({
-      ...prevStroke,
-      points: [...prevStroke.points, newPoint]
-    }));
+    setCurrentStroke((prevStroke) => {
+      const updatedStroke = {
+        ...prevStroke,
+        points: [...prevStroke.points, newPoint]
+      };
+      drawStroke(updatedStroke);
+      return updatedStroke;
+    });
+  };
 
-    redrawAllStrokes([...strokes, { ...currentStroke, points: [...currentStroke.points, newPoint] }]);
+  const drawStroke = (stroke) => {
+    const context = canvasRef.current.getContext('2d');
+    const smoothedPoints = applyChaikinAlgorithm(stroke.points);
+    if (smoothedPoints.length < 2) return;
+
+    context.beginPath();
+    context.moveTo(smoothedPoints[0].x, smoothedPoints[0].y);
+    smoothedPoints.forEach((point) => {
+      context.lineTo(point.x, point.y);
+    });
+    context.lineWidth = stroke.tool === 'draw' ? stroke.size : 20;
+    context.strokeStyle = stroke.tool === 'draw' ? stroke.color : 'white';
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.stroke();
   };
 
   const endDrawing = () => {
-    setIsDrawing(false);
-    setStrokes((prevStrokes) => [...prevStrokes, currentStroke]);
-    setCurrentStroke({ points: [], size: strokeSize, color: strokeColor, tool: tool });
+    if (isDrawing) {
+      setIsDrawing(false);
+      setStrokes((prevStrokes) => [...prevStrokes, currentStroke]);
+      setCurrentStroke({ points: [], size: strokeSize, color: strokeColor, tool: tool });
+    }
   };
 
-  const redrawAllStrokes = (allStrokes) => {
+  const redrawAllStrokes = () => {
     const context = canvasRef.current.getContext('2d');
-    context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+
+    // Clear the canvas and redraw the background
     context.fillStyle = 'white';
     context.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
-    allStrokes.forEach((stroke) => {
-      const smoothedPoints = applyChaikinAlgorithm(stroke.points);
-      if (smoothedPoints.length < 2) return;
+    // Redraw the loaded image if it exists
+    if (loadedData) {
+      const img = new Image();
+      img.onload = () => {
+        context.drawImage(img, 0, 0);
 
-      context.beginPath();
-      context.moveTo(smoothedPoints[0].x, smoothedPoints[0].y);
-      smoothedPoints.forEach((point) => {
-        context.lineTo(point.x, point.y);
-      });
-
-      context.lineWidth = stroke.tool === 'draw' ? stroke.size : 20;
-      context.strokeStyle = stroke.tool === 'draw' ? stroke.color : 'white';
-      context.stroke();
-    });
+        // Draw all strokes
+        strokes.forEach(drawStroke);
+      };
+      img.src = loadedData.data;
+    } else {
+      // If no loaded data, just draw all strokes
+      strokes.forEach(drawStroke);
+    }
   };
 
   const handleSave = async () => {
@@ -123,9 +143,12 @@ const Whiteboard = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ data: dataUrl }),
+        body: JSON.stringify({
+          data: dataUrl,
+          strokes: strokes  // Include all strokes
+        }),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('Drawing saved:', data);

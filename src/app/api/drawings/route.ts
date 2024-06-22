@@ -9,17 +9,17 @@ export async function POST(request: NextRequest) {
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const { data } = await request.json();
+    const { data, strokes } = await request.json();
     if (!data) {
       return NextResponse.json({ error: 'No data provided' }, { status: 400 });
     }
-    // Make sure session.user.id exists
     if (!session.user.id) {
       return NextResponse.json({ error: 'User ID not found in session' }, { status: 400 });
     }
     const drawing = await prisma.drawing.create({
       data: {
         data,
+        strokes: JSON.stringify(strokes), // Store strokes as a JSON string
         userId: session.user.id,
       },
     });
@@ -43,10 +43,16 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         data: true,
+        strokes: true,
         createdAt: true
       }
     });
-    return NextResponse.json(drawings);
+    // Parse strokes JSON for each drawing
+    const parsedDrawings = drawings.map(drawing => ({
+      ...drawing,
+      strokes: drawing.strokes ? JSON.parse(drawing.strokes) : []
+    }));
+    return NextResponse.json(parsedDrawings);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
