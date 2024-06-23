@@ -199,7 +199,7 @@ const Whiteboard = () => {
       />
       <button 
   onClick={handleSave} 
-  className='fixed top-2 right-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2'
+  className='fixed bottom-2 left-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2'
 >
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
