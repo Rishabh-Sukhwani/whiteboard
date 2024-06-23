@@ -38,6 +38,24 @@ const Dashboard = () => {
     return <div>You need to be authenticated to view this page.</div>;
   }
 
+  const handleDeleteDrawing = async (id) => {
+    try {
+      const response = await fetch(`/api/drawings/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove the deleted drawing from the state or refetch the drawings
+        setDrawings(drawings.filter(drawing => drawing.id !== id));
+        console.log('Drawing deleted successfully');
+      } else {
+        console.error('Failed to delete drawing');
+      }
+    } catch (error) {
+      console.error('Error deleting drawing:', error);
+    }
+  };
+
   const handleNewDrawing = () => {
     router.push("/whiteboard");
   };
@@ -82,11 +100,11 @@ const Dashboard = () => {
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  
+                  handleDeleteDrawing(drawing.id);
                 }}
                 className="text-red-600 hover:text-red-800"
               >
-                <TrashIcon className="w-5 h-5" />
+                <TrashIcon className="w-5 h-5 " />
               </button>
             </div>
           </div>

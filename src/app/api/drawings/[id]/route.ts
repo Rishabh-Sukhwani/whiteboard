@@ -81,3 +81,38 @@ export async function PUT(
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+  ) {
+    try {
+      const session = await getServerSession(authOptions);
+      if (!session || !session.user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+  
+      const drawing = await prisma.drawing.findUnique({
+        where: {
+          id: params.id,
+          userId: session.user.id
+        }
+      });
+  
+      if (!drawing) {
+        return NextResponse.json({ error: 'Drawing not found' }, { status: 404 });
+      }
+  
+      await prisma.drawing.delete({
+        where: {
+          id: params.id,
+          userId: session.user.id
+        }
+      });
+  
+      return NextResponse.json({ message: 'Drawing deleted successfully' });
+    } catch (error) {
+      console.error(error);
+      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+  }
