@@ -189,17 +189,36 @@ const Whiteboard = () => {
       />
       <canvas
         ref={canvasRef}
-        width={800}  // Set a fixed width
-        height={600} // Set a fixed height
+        width={window.innerWidth}  // Set a fixed width
+        height={window.innerHeight} // Set a fixed height
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={endDrawing}
         onMouseLeave={endDrawing}
         style={{ border: '1px solid black', backgroundColor: 'white' }}
       />
-      <button onClick={handleSave}>{drawingId ? 'Update' : 'Save'}</button>
-      {drawingId && <p>Editing drawing: {drawingId}</p>}
-      {loadedData && <p>Drawing data loaded</p>}
+      <button 
+  onClick={handleSave} 
+  className='fixed top-2 right-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2'
+>
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="1em" 
+    height="1em" 
+    viewBox="0 0 24 24"
+  >
+    <path 
+      fill="none" 
+      stroke="black" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth="2" 
+      d="M8 7H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+    />
+  </svg>
+  <span>{drawingId ? 'Update' : 'Save'}</span>
+</button>
+
     </div>
   );
 };
