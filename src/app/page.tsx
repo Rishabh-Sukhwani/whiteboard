@@ -1,28 +1,23 @@
-//import Whiteboard from '../components/whiteboard';
-
-/*
-export default function Home() {
-  return (
-    <div>
-      <Whiteboard />
-    </div>
-  );
-}
-*/
-
 "use client";
-
-import LoginButton from '../components/loginButton';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import LoginButton from '../components/loginButton';
 
 const Home = () => {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.push('/dashboard');
+    }
+  }, [status, router]);
 
   return (
     <div>
       <h1>Welcome to the Whiteboard App</h1>
       <LoginButton />
-      {status === 'authenticated' && <p>Welcome, {session.user?.name}</p>}
     </div>
   );
 };

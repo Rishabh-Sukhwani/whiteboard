@@ -18,6 +18,17 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    redirect: async ({ url, baseUrl }) => {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      // Always redirect to dashboard after sign in
+      return `${baseUrl}/dashboard`
+    },
+  },
+  pages: {
+    signIn: '/dashboard',
   },
 };
 

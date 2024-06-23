@@ -1,5 +1,5 @@
 "use client";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from 'next/image';
@@ -45,9 +45,16 @@ const Dashboard = () => {
     router.push(`/whiteboard?id=${drawingId}`);
   };
 
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/' });
+  };
+
   return (
     <div>
-      <h1>Your Drawings</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>Your Drawings</h1>
+        <button onClick={handleSignOut}>Sign Out</button>
+      </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
         {drawings.map((drawing) => (
           <div key={drawing.id} onClick={() => handleSelectDrawing(drawing.id)} style={{ cursor: 'pointer' }}>
