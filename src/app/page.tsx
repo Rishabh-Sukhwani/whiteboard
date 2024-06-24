@@ -56,10 +56,7 @@ const Home = () => {
       
       <LoginButton />
       
-      <div className="mt-12 text-sm">
-        <a href="#" className="underline mr-4">Learn More</a>
-        <a href="#" className="underline">Contact Us</a>
-      </div>
+      
     </div>
   );
 };
